@@ -85,19 +85,11 @@ class Gandi {
 		const domainPurchaseDurationInYears = await this.unifiedConfig.get(
 			"domainPurchaseDurationInYears"
 		)
-		// TODO: Add flag that skips this prompt
-		const prompt = new Confirm({
-			name: "purchaseQuestion",
-			message: `Do you want to purchase domain "${this.domain}" at ${
-				domainPurchaseDurationInYears * price.price_after_taxes
-			}${
-				domainAvailability.currency
-			} total for ${domainPurchaseDurationInYears} ${
-				domainPurchaseDurationInYears === 1 ? "year" : "years"
-			}?`,
-			initial: false,
-		})
-		const shouldPurchase = await prompt.run()
+		const shouldPurchase = await this.showPurchaseConfirmationPrompt(
+			domainPurchaseDurationInYears,
+			price.price_after_taxes,
+			domainAvailability.currency
+		)
 		if (!shouldPurchase) {
 			console.log(
 				"Ok, aborting domain purchase. Continuing with the next step."
@@ -105,30 +97,44 @@ class Gandi {
 			return
 		}
 		console.log("Great, attempting to purchase domain...")
-		const domainOwner = await this.unifiedConfig.get("domainOwner")
-		const domainPurchaseBody: DomainPurchaseBody = {
-			fqdn: this.domain,
-			duration: domainPurchaseDurationInYears,
-			owner: {
-				country: domainOwner.countryISO,
-				email: domainOwner.email,
-				family: domainOwner.lastName,
-				given: domainOwner.firstName,
-				streetaddr: domainOwner.streetAddress,
-				city: domainOwner.city,
-				zip: domainOwner.zip,
-				phone: domainOwner.phone,
-				type: domainOwner.domainOwnerTypeNumeric,
-				currency: currency,
-				price: price.price_after_taxes,
-			},
-		}
-		const maxRetries = 10
-		const delayBeforeRetryMS = 5000
+
+		const domainPurchaseBody = await this.createDomainPurchaseBody(
+			domainPurchaseDurationInYears,
+			currency,
+			price.price_after_taxes
+		)
 		await this.purchaseDomain(domainPurchaseBody)
 		console.log(
 			"Domain purchase seems to have succeeded, checking account for purchased domain to confirm payment (this may take a few tries)..."
 		)
+		await this.pollDomainPurchase()
+		console.log("Domain purchase was successful, congratulations!")
+		console.log(
+			"You can view the purchased domain in the Gandi admin console at https://admin.gandi.net/domain"
+		)
+	}
+
+	private async showPurchaseConfirmationPrompt(
+		domainPurchaseDurationInYears: number,
+		price: number,
+		currency: string
+	): Promise<boolean> {
+		// TODO: Add flag that skips this prompt
+		const prompt = new Confirm({
+			name: "purchaseQuestion",
+			message: `Do you want to purchase domain "${this.domain}" at ${
+				domainPurchaseDurationInYears * price
+			}${currency} total for ${domainPurchaseDurationInYears} ${
+				domainPurchaseDurationInYears === 1 ? "year" : "years"
+			}?`,
+			initial: false,
+		})
+		return prompt.run()
+	}
+
+	private async pollDomainPurchase() {
+		const maxRetries = 10
+		const delayBeforeRetryMS = 5000
 		await poll(
 			this.isDomainAlreadyOwned.bind(this),
 			(result) => result,
@@ -145,10 +151,33 @@ class Gandi {
 				)
 			}
 		)
-		console.log("Domain purchase was successful, congratulations!")
-		console.log(
-			"You can view the purchased domain in the Gandi admin console at https://admin.gandi.net/domain"
-		)
+	}
+
+	private async createDomainPurchaseBody(
+		domainPurchaseDurationInYears: number,
+		currency: string,
+		price: number
+	): Promise<DomainPurchaseBody> {
+		const domainOwner = await this.unifiedConfig.get("domainOwner")
+		const domainPurchaseBody: DomainPurchaseBody = {
+			fqdn: this.domain,
+			duration: domainPurchaseDurationInYears,
+			owner: {
+				country: domainOwner.countryISO,
+				email: domainOwner.email,
+				family: domainOwner.lastName,
+				given: domainOwner.firstName,
+				streetaddr: domainOwner.streetAddress,
+				city: domainOwner.city,
+				zip: domainOwner.zip,
+				phone: domainOwner.phone,
+				type: domainOwner.domainOwnerTypeNumeric,
+				currency: currency,
+				price: price,
+			},
+		}
+
+		return domainPurchaseBody
 	}
 
 	private async purchaseDomain(purchaseBody: DomainPurchaseBody) {
