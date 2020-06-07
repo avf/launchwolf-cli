@@ -426,6 +426,11 @@ class Gandi {
 		)
 		return response.data
 	}
+
+	public async setupDNSForMailjet(mailjetDNS: any) {
+		// const records = await this.getDNSRecords()
+		console.log(mailjetDNS)
+	}
 }
 
 export default Gandi

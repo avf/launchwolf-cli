@@ -6,7 +6,6 @@ import cli from "cli-ux"
 import chalk from "chalk"
 import * as fs from "fs-extra"
 import * as os from "os"
-import Netlify from "../hosting/netlify"
 const { Input } = require("enquirer")
 import {
 	getFeatureTable,
@@ -14,6 +13,7 @@ import {
 	getFeatureByName,
 	getSingleFeatureTable,
 } from "../utils/FeatureTable"
+import Mailjet from "../mailing/mailjet"
 
 export default class Launch extends Command {
 	static description = "Launches a new website."
@@ -47,54 +47,63 @@ export default class Launch extends Command {
 			this.log(`Welcome to LaunchWolf!`)
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
-			this.log(
-				`LaunchWolf will set up the following features for you. The end result will be a functioning, deployed website, like this one here: ${chalk.underline(
-					"https://demo.launchwolf.com"
-				)}`
-			)
-			this.log(getFeatureTable())
-			const hasBeenRunOnceBefore = await this.unifiedConfig.doesGlobalConfigExist()
-			if (!hasBeenRunOnceBefore) {
-				this.log(
-					"Since this is your first run, we need to grab some info from you to get started."
-				)
-			}
+			// this.log(
+			// 	`LaunchWolf will set up the following features for you. The end result will be a functioning, deployed website, like this one here: ${chalk.underline(
+			// 		"https://demo.launchwolf.com"
+			// 	)}`
+			// )
+			// this.log(getFeatureTable())
+			// const hasBeenRunOnceBefore = await this.unifiedConfig.doesGlobalConfigExist()
+			// if (!hasBeenRunOnceBefore) {
+			// 	this.log(
+			// 		"Since this is your first run, we need to grab some info from you to get started."
+			// 	)
+			// }
 			const domain = await this.parseDomain(args)
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
-			const isDomainOwned = await this.purchaseDomain(domain)
-			const emailFeature = getFeatureByName("Email")
-			emailFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
-			if (isDomainOwned) {
-				await this.createMailbox(domain)
-				await this.setupEmailForwarding(domain)
-			} else {
-				console.log(
-					"Skipping Email setup since domain ownership couldn't be confirmed."
-				)
-			}
-			emailFeature.status = FeatureStatus.done
-			const hostingFeature = getFeatureByName("Hosting")
-			hostingFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
+			// const isDomainOwned = await this.purchaseDomain(domain)
+			// const emailFeature = getFeatureByName("Email")
+			// emailFeature.status = FeatureStatus.inProgress
+			// console.log(getFeatureTable())
+			// if (isDomainOwned) {
+			// 	await this.createMailbox(domain)
+			// 	await this.setupEmailForwarding(domain)
+			// } else {
+			// 	console.log(
+			// 		"Skipping Email setup since domain ownership couldn't be confirmed."
+			// 	)
+			// }
+			// emailFeature.status = FeatureStatus.done
+			// const hostingFeature = getFeatureByName("Hosting")
+			// hostingFeature.status = FeatureStatus.inProgress
+			// console.log(getFeatureTable())
 
-			const netlify = new Netlify(domain, this.unifiedConfig)
-			await netlify.setupContinousDeployment()
-			if (isDomainOwned) {
-				const netlifySite = await netlify.addDomainToSite()
-				const aliasAndCNAMERecordValue = `${netlifySite.name}.netlify.com.`
-				await this.gandi.updateDNS(aliasAndCNAMERecordValue)
-			} else {
-				console.log(
-					"Skipping domain and DNS setup for Netlify hosting, since domain ownership couldn't be confirmed."
-				)
-			}
+			// const netlify = new Netlify(domain, this.unifiedConfig)
+			// await netlify.setupContinousDeployment()
+			// if (isDomainOwned) {
+			// 	const netlifySite = await netlify.addDomainToSite()
+			// 	const aliasAndCNAMERecordValue = `${netlifySite.name}.netlify.com.`
+			// 	await this.gandi.updateDNS(aliasAndCNAMERecordValue)
+			// } else {
+			// 	console.log(
+			// 		"Skipping domain and DNS setup for Netlify hosting, since domain ownership couldn't be confirmed."
+			// 	)
+			// }
 
-			hostingFeature.status = FeatureStatus.done
-			const mailingListFeature = getFeatureByName("Mailing list")
-			mailingListFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
+			// hostingFeature.status = FeatureStatus.done
+			// const mailingListFeature = getFeatureByName("Mailing list")
+			// mailingListFeature.status = FeatureStatus.inProgress
+			// console.log(getFeatureTable())
+
+			const mailjetConfig = await this.unifiedConfig.get("mailjetConfig")
+			const mailjet = new Mailjet(
+				domain,
+				this.unifiedConfig,
+				mailjetConfig
+			)
+			const mailjetDNSValues = await mailjet.setupDomainForSending()
+			await this.gandi.setupDNSForMailjet(mailjetDNSValues)
 		} catch (error) {
 			this.handleError(error)
 		}

@@ -222,6 +222,27 @@ export const configValues = {
 			}
 		},
 	},
+	mailjetConfig: {
+		prompt: async () => {
+			console.log(
+				"We need your Mailjet Public API and Secret Key. You can create them here: https://app.mailjet.com/account/api_keys"
+			)
+			const passwordPrompt = new Password({
+				name: "mailjetPublicKey",
+				message: "Please enter the Mailjet (public) API Key.",
+			})
+			const mailjetPublicKey = await passwordPrompt.run()
+			const passwordPromptPrivate = new Password({
+				name: "mailjetPrivateKey",
+				message: "Please enter the Mailjet Secret Key.",
+			})
+			const mailjetPrivateKey = await passwordPromptPrivate.run()
+			return {
+				publicAPIKey: mailjetPublicKey,
+				privateAPIKey: mailjetPrivateKey,
+			}
+		},
+	},
 }
 
 export class UnifiedConfig {
