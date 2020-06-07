@@ -51,9 +51,7 @@ export default class Launch extends Command {
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
 			this.log(
-				`LaunchWolf will set up the following features for you. The end result will be a functioning, deployed website, like this one here: ${chalk.underline(
-					"https://demo.launchwolf.com"
-				)}`
+				`LaunchWolf will set up the following features for you. The end result will be a functioning, deployed website.`
 			)
 			this.log(getFeatureTable())
 			const hasBeenRunOnceBefore = await this.unifiedConfig.doesGlobalConfigExist()
