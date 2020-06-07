@@ -81,20 +81,29 @@ export default class Launch extends Command {
 	}
 
 	private async setupEmailForwarding(domain: string) {
-		const emailConfig = await this.unifiedConfig.get("email", {
-			domain,
-		})
-		if (emailConfig.forwardingAddresses?.length > 0) {
-			cli.action.start(
-				`Setting up forwarding to ${chalk.cyan(
+		try {
+			const emailConfig = await this.unifiedConfig.get("email", {
+				domain,
+			})
+			if (emailConfig.forwardingAddresses?.length > 0) {
+				cli.action.start(
+					`Setting up forwarding to ${chalk.cyan(
+						emailConfig.forwardingAddresses
+					)}`
+				)
+				await this.gandi.setupEmailForwarding(
+					emailConfig.primaryEmail,
 					emailConfig.forwardingAddresses
+				)
+				cli.action.stop()
+			}
+		} catch (error) {
+			this.handleError(error)
+			console.log(
+				`Error creating email forward, skipping this step. Please set it up manually at ${chalk.green(
+					"https://admin.gandi.net/domain"
 				)}`
 			)
-			await this.gandi.setupEmailForwarding(
-				emailConfig.primaryEmail,
-				emailConfig.forwardingAddresses
-			)
-			cli.action.stop()
 		}
 	}
 
