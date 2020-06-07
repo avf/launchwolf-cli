@@ -64,6 +64,13 @@ export default class Launch extends Command {
 				aliases: emailConfig.aliases,
 			})
 			cli.action.stop()
+			console.log(
+				`Mailbox successfully created. You can access it at ${chalk.green(
+					"webmail." + domain
+				)} using your email ${chalk.cyan(
+					emailConfig.primaryEmail + "@" + domain
+				)} and the password you entered before.`
+			)
 		} else {
 			console.log(
 				`Mailbox ${chalk.cyan(
