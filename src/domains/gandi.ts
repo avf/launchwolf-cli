@@ -18,6 +18,8 @@ interface DomainOwner {
 	zip: string
 	phone: string
 	type: number // 0=person, 1=company, 2=association, 3=public body, 4=reseller
+	currency?: string
+	price?: number
 }
 
 interface DomainPurchaseBody {
@@ -65,14 +67,19 @@ class Gandi {
 	}
 
 	public async performDomainPurchaseSequence() {
-		const domainAvailability = await this.checkAvailability()
+		const currency = await this.unifiedConfig.get("domainPurchaseCurrency")
+		const domainAvailability = await this.checkAvailability(currency)
 		const product = domainAvailability?.products?.filter(
 			(elem: any) => elem.process === "create"
 		)[0]
 		const price = product?.prices?.filter(
 			(elem: any) => elem.duration_unit === "y"
 		)[0]
-		if (product?.status !== "available" || !price) {
+		if (
+			product?.status !== "available" ||
+			!price ||
+			domainAvailability?.currency !== currency
+		) {
 			throw new Error("Unfortunately, this domain is unavailable.")
 		}
 		const domainPurchaseDurationInYears = await this.unifiedConfig.get(
@@ -112,6 +119,8 @@ class Gandi {
 				zip: domainOwner.zip,
 				phone: domainOwner.phone,
 				type: domainOwner.domainOwnerTypeNumeric,
+				currency: currency,
+				price: price.price_after_taxes,
 			},
 		}
 		const maxRetries = 10
@@ -162,11 +171,9 @@ class Gandi {
 		return
 	}
 
-	public async checkAvailability() {
-		// TODO: Add currency, "EUR", "USD", "GBP", "TWD", "CNY"
-		// TODO: Add price and currency that is retrieved here to purchase request
+	public async checkAvailability(currency: string) {
 		const response = await this.axios.get(
-			`/domain/check?name=${this.domain}&processes=create`
+			`/domain/check?name=${this.domain}&processes=create&currency=${currency}`
 		)
 
 		return response.data

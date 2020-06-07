@@ -3,6 +3,7 @@ import * as fs from "fs-extra"
 import { CustomForm } from "../utils/CustomForm"
 const { Password, Confirm, AutoComplete, Select } = require("enquirer")
 const countries = require("./countries.json")
+const domainPurchaseCurrencyOptions = ["EUR", "USD", "GBP", "TWD", "CNY"]
 
 export const configValues = {
 	gandiAPIKey: {
@@ -16,6 +17,21 @@ export const configValues = {
 					"Please enter the API key for gandi.net. You can find instructions on how to create one here: https://github.com/avf/launchwolf-cli#domains",
 			})
 			return prompt.run()
+		},
+	},
+	domainPurchaseCurrency: {
+		flag: flags.string({
+			description: "Preferred currency for new domain purchases.",
+			options: domainPurchaseCurrencyOptions,
+		}),
+		prompt: () => {
+			const typePrompt = new Select({
+				name: "domainPurchaseCurrency",
+				message:
+					"Select your preferred currency for new domains. We'll store it and use it to check prices and for new purchases.",
+				choices: domainPurchaseCurrencyOptions.slice(),
+			})
+			return typePrompt.run()
 		},
 	},
 	domainOwner: {
