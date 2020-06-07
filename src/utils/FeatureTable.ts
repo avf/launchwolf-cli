@@ -38,7 +38,7 @@ export let features: Feature[] = [
 	{
 		feature: "Domain",
 		provider: "gandi.net",
-		price: "Depends on Domain",
+		price: "Price of Domain",
 		description: "Purchase a new domain",
 		status: FeatureStatus.inProgress,
 		color: chalk.magentaBright,
@@ -78,7 +78,7 @@ export function getFeatureTable(): string {
 		head: [
 			"Feature",
 			"Provider",
-			"Price",
+			"Pricing",
 			"Description",
 			"Status",
 		].map((elem) => chalk.reset.bold.underline(elem)),

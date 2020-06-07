@@ -101,6 +101,9 @@ export default class Launch extends Command {
 					"https://" + domain
 				)}`
 			)
+			this.log(
+				"If you want to deploy a new version, all you need to do is push to master (as long as you set up continous delivery with Netlify in the previous step)."
+			)
 		} catch (error) {
 			this.handleError(error)
 		}
