@@ -28,6 +28,14 @@ interface DomainPurchaseBody {
 	owner: DomainOwner
 }
 
+interface Mailbox {
+	id: string
+	address: string
+	domain: string
+	mailbox_type: string
+	login: string
+}
+
 class Gandi {
 	domain: string
 	axios: AxiosInstance
@@ -209,9 +217,28 @@ class Gandi {
 	}
 
 	private async getDomainInfo(): Promise<PurchasedDomainDetails> {
-		// TODO: error handling for bad API key
 		const response = await this.axios.get<PurchasedDomainDetails>(
 			`/domain/domains/${this.domain}`
+		)
+		return response.data
+	}
+
+	public async doesMailboxExist(): Promise<boolean> {
+		const primaryMailboxName = await this.unifiedConfig.get("email", {
+			domain: this.domain,
+		})
+		console.log(primaryMailboxName)
+		const mailboxes = await this.getMailboxes()
+		console.log(mailboxes)
+		return (
+			mailboxes.filter((elem) => elem.login === primaryMailboxName)
+				.length > 0
+		)
+	}
+
+	private async getMailboxes(): Promise<Mailbox[]> {
+		const response = await this.axios.get<Mailbox[]>(
+			`/email/mailboxes/${this.domain}`
 		)
 		return response.data
 	}

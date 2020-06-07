@@ -1,10 +1,11 @@
 import { flags } from "@oclif/command"
 import * as fs from "fs-extra"
 import { CustomForm } from "../utils/CustomForm"
-const { Password, Confirm, AutoComplete, Select } = require("enquirer")
+const { Password, Confirm, AutoComplete, Select, Snippet } = require("enquirer")
 const countries = require("./countries.json")
 const domainPurchaseCurrencyOptions = ["EUR", "USD", "GBP", "TWD", "CNY"]
 
+// TODO: Add config version
 export const configValues = {
 	gandiAPIKey: {
 		flag: flags.string({
@@ -130,6 +131,20 @@ export const configValues = {
 			default: 1,
 		}),
 	},
+	email: {
+		prompt: async (promptArgs: any) => {
+			const prompt = new Snippet({
+				name: "email",
+				message: "What should your primary email address be?",
+				required: true,
+				template: `\${primaryEmail}@${promptArgs.domain}`,
+			})
+
+			const primaryEmailResult = await prompt.run()
+			const primaryEmail = primaryEmailResult.values.primaryEmail
+			return primaryEmail
+		},
+	},
 }
 
 export class UnifiedConfig {
@@ -165,7 +180,7 @@ export class UnifiedConfig {
 	// If not present, attempts to read from local config file.
 	// If not present, attempts to read from global config file.
 	// If not present, shows a prompt. The value is then saved in the global/local config.
-	public async get(key: string): Promise<any> {
+	public async get(key: string, promptArgs?: any): Promise<any> {
 		if (this.parsedFlags[key]) {
 			return Promise.resolve(this.parsedFlags[key])
 		} else if (this.localConfig[key]) {
@@ -175,7 +190,9 @@ export class UnifiedConfig {
 		} else if (this.possibleKeys[key].prompt) {
 			let resultFromPrompt = null
 			do {
-				resultFromPrompt = await this.possibleKeys[key].prompt()
+				resultFromPrompt = await this.possibleKeys[key].prompt(
+					promptArgs
+				)
 				if (!resultFromPrompt) {
 					console.log("You entered an invalid value.")
 				}

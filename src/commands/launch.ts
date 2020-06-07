@@ -29,14 +29,18 @@ export default class Launch extends Command {
 	static args = [{ name: "url" }]
 
 	unifiedConfig!: UnifiedConfig
-
+	gandi!: Gandi
 	async run() {
 		try {
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
 			this.log("Welcome to LaunchWolf!")
 			const domain = await this.parseDomain(args)
+			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
+			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 			await this.purchaseDomain(domain)
+			const doesMailboxExist = await this.gandi.doesMailboxExist()
+			console.log(doesMailboxExist)
 		} catch (error) {
 			this.handleError(error)
 		}
@@ -45,10 +49,10 @@ export default class Launch extends Command {
 	private async purchaseDomain(domain: string) {
 		this.log(`Checking availability for domain "${domain}"...`)
 		const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
-		const gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
-		const isDomainOwned = await gandi.isDomainAlreadyOwned()
+		this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
+		const isDomainOwned = await this.gandi.isDomainAlreadyOwned()
 		if (!isDomainOwned) {
-			await gandi.performDomainPurchaseSequence()
+			await this.gandi.performDomainPurchaseSequence()
 		} else {
 			this.log(`Seems like you already own \"${domain}\".`)
 		}
