@@ -63,6 +63,18 @@ export default class Launch extends Command {
 					)} already exists, continuing.`
 				)
 			}
+			if (emailConfig.forwardingAddresses?.length > 0) {
+				cli.action.start(
+					`Setting up forwarding to ${chalk.cyan(
+						emailConfig.forwardingAddresses
+					)}`
+				)
+				await this.gandi.setupEmailForwarding(
+					emailConfig.primaryEmail,
+					emailConfig.forwardingAddresses
+				)
+				cli.action.stop()
+			}
 		} catch (error) {
 			this.handleError(error)
 		}
@@ -137,6 +149,10 @@ export default class Launch extends Command {
 			console.log(error.config)
 		} else {
 			console.log("Unknown error. ", error)
+		}
+
+		if (error.stack) {
+			console.log(error.stack)
 		}
 		this.log(
 			"An error occurred, see above for details. After fixing the problem you can safely re-run this tool to continue."
