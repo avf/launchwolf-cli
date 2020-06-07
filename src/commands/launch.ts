@@ -67,19 +67,19 @@ export default class Launch extends Command {
 			const isDomainOwned = await this.purchaseDomain(domain)
 			const emailFeature = getFeatureByName("Email")
 			emailFeature.status = FeatureStatus.inProgress
-			console.log(getStatusTable())
+			this.log(getStatusTable())
 			if (isDomainOwned) {
 				await this.createMailbox(domain)
 				await this.setupEmailForwarding(domain)
 			} else {
-				console.log(
+				this.log(
 					"Skipping Email setup since domain ownership couldn't be confirmed."
 				)
 			}
 			emailFeature.status = FeatureStatus.done
 			const hostingFeature = getFeatureByName("Hosting")
 			hostingFeature.status = FeatureStatus.inProgress
-			console.log(getStatusTable())
+			this.log(getStatusTable())
 
 			const netlify = new Netlify(domain, this.unifiedConfig)
 			await netlify.setupContinousDeployment()
@@ -94,21 +94,58 @@ export default class Launch extends Command {
 			}
 
 			hostingFeature.status = FeatureStatus.done
-			const mailingListFeature = getFeatureByName("Mailing list")
-			mailingListFeature.status = FeatureStatus.inProgress
-			console.log(getStatusTable())
-
-			const mailjetConfig = await this.unifiedConfig.get("mailjetConfig")
-			const mailjet = new Mailjet(
-				domain,
-				this.unifiedConfig,
-				mailjetConfig
+			await this.setupMailjet(domain)
+			this.log(getStatusTable())
+			this.log(
+				`Everything's done! After all the DNS changes propagated (can take up to 24 hours), your site will be live at: ${chalk.underline(
+					"https://" + domain
+				)}`
 			)
-			const mailjetDNSValues = await mailjet.setupDomainForSending()
-			await this.gandi.setupDNSForMailjet(mailjetDNSValues)
 		} catch (error) {
 			this.handleError(error)
 		}
+	}
+
+	private async setupMailjet(domain: string) {
+		const mailingListFeature = getFeatureByName("Mailing list")
+		mailingListFeature.status = FeatureStatus.inProgress
+		console.log(getStatusTable())
+
+		const mailjetConfig = await this.unifiedConfig.get("mailjetConfig")
+		const mailjet = new Mailjet(domain, this.unifiedConfig, mailjetConfig)
+		const mailjetDNSValues = await mailjet.setupDomainForSending()
+		await this.gandi.setupDNSForMailjet(mailjetDNSValues)
+		const contactList = await mailjet.getContactListForDomain()
+		if (contactList) {
+			this.log(
+				`A contact list with the name ${mailingListFeature.color(
+					domain
+				)} already exists. You can view it here: ${mailingListFeature.color.underline(
+					"https://app.mailjet.com/contacts"
+				)}`
+			)
+		} else {
+			this.log(
+				`Creating a contact list with the name ${mailingListFeature.color(
+					domain
+				)}...`
+			)
+			await mailjet.createContactListForDomain()
+			this.log(
+				`Successfully created list with the name ${mailingListFeature.color(
+					domain
+				)}. You can view it here: ${mailingListFeature.color.underline(
+					"https://app.mailjet.com/contacts"
+				)}`
+			)
+		}
+
+		this.log(
+			`All you need to do now is integrate the subscription widget into the website. Unfortunately, this can't be automated, but you can easily create one at ${mailingListFeature.color.underline(
+				"https://app.mailjet.com/widget"
+			)}. For the next website you launch, you can just duplicate the widget and assign the duplicate to the newly created contact list.`
+		)
+		mailingListFeature.status = FeatureStatus.done
 	}
 
 	private async createMailbox(domain: string) {

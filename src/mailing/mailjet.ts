@@ -73,6 +73,32 @@ class Mailjet {
 		)
 		return dns
 	}
+
+	public async getContactLists() {
+		const response = await this.mailjet
+			.get("contactslist", { version: MAILJET_API_VERSION })
+			.request()
+		return response.body
+	}
+
+	public async getContactListForDomain() {
+		const contactLists = await this.getContactLists()
+		const contactList = contactLists.Data?.filter(
+			(elem: any) => elem.Name === this.domain
+		)?.[0]
+		return contactList
+	}
+
+	public async createContactListForDomain() {
+		const response = await this.mailjet
+			.post("contactslist", { version: MAILJET_API_VERSION })
+			.request({
+				Name: this.domain,
+			})
+		if (response.body?.Data?.[0]?.Name != this.domain) {
+			throw new Error(response.body)
+		}
+	}
 }
 
 export default Mailjet

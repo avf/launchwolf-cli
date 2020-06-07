@@ -208,7 +208,7 @@ class Gandi {
 	private async performDNSChanges(promises: [string, () => Promise<any>][]) {
 		if (promises.length === 0) {
 			console.log(
-				`All DNS records set up correctly. Please wait a few hours for the changes to propagate. After that, your site will be online and available at https://${this.domain}`
+				`All DNS records set up correctly. Please wait a few hours for the changes to propagate.`
 			)
 			return
 		}
