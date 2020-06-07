@@ -4,6 +4,9 @@ import * as path from "path"
 import { configValues, UnifiedConfig } from "../config/UnifiedConfig"
 import cli from "cli-ux"
 import chalk from "chalk"
+import * as fs from "fs-extra"
+import * as child_process from "child_process"
+const NetlifyCLIInit = require("netlify-cli/src/commands/init.js")
 
 const { Input } = require("enquirer")
 
@@ -35,7 +38,7 @@ export default class Launch extends Command {
 	gandi!: Gandi
 	async run() {
 		try {
-			this.log("Welcome to LaunchWolf!")
+			// this.log("Welcome to LaunchWolf!")
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
 			const domain = await this.parseDomain(args)
@@ -44,9 +47,49 @@ export default class Launch extends Command {
 			await this.purchaseDomain(domain)
 			await this.createMailbox(domain)
 			await this.setupEmailForwarding(domain)
+			await this.netlifyDeploy()
 		} catch (error) {
 			this.handleError(error)
 		}
+	}
+
+	private async netlifyDeploy() {
+		const netlifySiteId = await this.readLocalNetlifySiteId()
+		if (netlifySiteId) {
+			console.log(
+				`Seems like ${chalk.greenBright(
+					"continuous deployment"
+				)} with ${chalk.greenBright(
+					"Netlify"
+				)} has already been set up. Anything you ${chalk.greenBright(
+					"push"
+				)} to ${chalk.greenBright(
+					"master"
+				)} branch should automatically be deployed.`
+			)
+			return
+		}
+
+		console.log(
+			"Will now set up continous deployment with Netlify. Please follow the instructions from Netlify CLI."
+		)
+		await NetlifyCLIInit.run([])
+		console.log(
+			`${chalk.greenBright(
+				"Continuous deployment"
+			)} was set up successfully! Anything you ${chalk.greenBright(
+				"push"
+			)} to ${chalk.greenBright(
+				"master"
+			)} branch will automatically be deployed.`
+		)
+	}
+
+	private async readLocalNetlifySiteId() {
+		const netlifyJSONPath = path.join(process.cwd(), "/.netlify/state.json")
+		const netlifyJSON = await fs.readJSON(netlifyJSONPath)
+		const netlifySiteId = netlifyJSON.siteId
+		return netlifySiteId
 	}
 
 	private async createMailbox(domain: string) {
@@ -65,15 +108,15 @@ export default class Launch extends Command {
 			})
 			cli.action.stop()
 			console.log(
-				`Mailbox successfully created. You can access it at ${chalk.green(
+				`Mailbox successfully created. You can access it at ${chalk.greenBright(
 					"webmail." + domain
-				)} using your email ${chalk.cyan(
+				)} using your email ${chalk.cyanBright(
 					emailConfig.primaryEmail + "@" + domain
 				)} and the password you entered before.`
 			)
 		} else {
 			console.log(
-				`Mailbox ${chalk.cyan(
+				`Mailbox ${chalk.cyanBright(
 					emailConfig.primaryEmail + "@" + domain
 				)} already exists, continuing.`
 			)
@@ -87,7 +130,7 @@ export default class Launch extends Command {
 			})
 			if (emailConfig.forwardingAddresses?.length > 0) {
 				cli.action.start(
-					`Setting up forwarding to ${chalk.cyan(
+					`Setting up forwarding to ${chalk.cyanBright(
 						emailConfig.forwardingAddresses
 					)}`
 				)
@@ -100,7 +143,7 @@ export default class Launch extends Command {
 		} catch (error) {
 			this.handleError(error)
 			console.log(
-				`Error creating email forward, skipping this step. Please set it up manually at ${chalk.green(
+				`Error creating email forward, skipping this step. Please set it up manually at ${chalk.greenBright(
 					"https://admin.gandi.net/domain"
 				)}`
 			)
