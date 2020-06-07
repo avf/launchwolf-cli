@@ -42,41 +42,52 @@ export default class Launch extends Command {
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 			await this.purchaseDomain(domain)
-			console.log("Next, we'll set up your email account.")
-			const doesMailboxExist = await this.gandi.doesMailboxExist()
-			const emailConfig = await this.unifiedConfig.get("email", {
-				domain,
-			})
-			if (doesMailboxExist === false) {
-				cli.action.start("Creating the new mailbox")
-				await this.gandi.createMailbox({
-					login: emailConfig.primaryEmail,
-					mailbox_type: "standard",
-					password: emailConfig.password,
-					aliases: emailConfig.aliases,
-				})
-				cli.action.stop()
-			} else {
-				console.log(
-					`Mailbox ${chalk.cyan(
-						emailConfig.primaryEmail + "@" + domain
-					)} already exists, continuing.`
-				)
-			}
-			if (emailConfig.forwardingAddresses?.length > 0) {
-				cli.action.start(
-					`Setting up forwarding to ${chalk.cyan(
-						emailConfig.forwardingAddresses
-					)}`
-				)
-				await this.gandi.setupEmailForwarding(
-					emailConfig.primaryEmail,
-					emailConfig.forwardingAddresses
-				)
-				cli.action.stop()
-			}
+			await this.createMailbox(domain)
+			await this.setupEmailForwarding(domain)
 		} catch (error) {
 			this.handleError(error)
+		}
+	}
+
+	private async createMailbox(domain: string) {
+		console.log("Next, we'll set up your email account.")
+		const doesMailboxExist = await this.gandi.doesMailboxExist()
+		const emailConfig = await this.unifiedConfig.get("email", {
+			domain,
+		})
+		if (doesMailboxExist === false) {
+			cli.action.start("Creating the new mailbox")
+			await this.gandi.createMailbox({
+				login: emailConfig.primaryEmail,
+				mailbox_type: "standard",
+				password: emailConfig.password,
+				aliases: emailConfig.aliases,
+			})
+			cli.action.stop()
+		} else {
+			console.log(
+				`Mailbox ${chalk.cyan(
+					emailConfig.primaryEmail + "@" + domain
+				)} already exists, continuing.`
+			)
+		}
+	}
+
+	private async setupEmailForwarding(domain: string) {
+		const emailConfig = await this.unifiedConfig.get("email", {
+			domain,
+		})
+		if (emailConfig.forwardingAddresses?.length > 0) {
+			cli.action.start(
+				`Setting up forwarding to ${chalk.cyan(
+					emailConfig.forwardingAddresses
+				)}`
+			)
+			await this.gandi.setupEmailForwarding(
+				emailConfig.primaryEmail,
+				emailConfig.forwardingAddresses
+			)
+			cli.action.stop()
 		}
 	}
 
