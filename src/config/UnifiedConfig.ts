@@ -3,6 +3,9 @@ import * as fs from "fs-extra"
 import { CustomForm } from "../utils/CustomForm"
 import chalk from "chalk"
 import cli from "cli-ux"
+import * as os from "os"
+import * as path from "path"
+const NetlifyAPI = require("netlify")
 
 const {
 	Password,
@@ -184,6 +187,38 @@ export const configValues = {
 				password,
 				aliases,
 				forwardingAddresses,
+			}
+		},
+	},
+	netlifyAccessToken: {
+		prompt: async () => {
+			try {
+				const netlifyConfigPath = path.join(
+					os.homedir(),
+					".netlify",
+					"config.json"
+				)
+				const netlifyConfig = await fs.readJSON(netlifyConfigPath)
+				const userId = netlifyConfig.userId
+				const tokenFromConfig =
+					netlifyConfig.users?.[userId]?.auth?.token
+				return tokenFromConfig
+			} catch (error) {
+				// Failed reading from netlify config. Launching browser to authenticate.
+				const clientId =
+					"8274a33a0f170e39f1683fc5998aed42d59d6740e598af80e177085d6117dbe5"
+				const netlifyAPI = new NetlifyAPI()
+				const ticket = await netlifyAPI.createTicket({
+					clientId: clientId,
+				})
+				// Open browser for authentication
+				await cli.open(
+					`https://app.netlify.com/authorize?response_type=ticket&ticket=${ticket.id}`
+				)
+				// API is also set up to use the returned access token as a side effect
+				// Save this for later so you can quickly set up an authenticated client
+				const accessToken = await netlifyAPI.getAccessToken(ticket)
+				return accessToken
 			}
 		},
 	},

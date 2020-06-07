@@ -82,7 +82,7 @@ class Gandi {
 		}
 	}
 
-	public async performDomainPurchaseSequence() {
+	public async performDomainPurchaseSequence(): Promise<boolean> {
 		const currency = await this.unifiedConfig.get("domainPurchaseCurrency")
 		const domainAvailability = await this.checkAvailability(currency)
 		const product = domainAvailability?.products?.filter(
@@ -110,7 +110,7 @@ class Gandi {
 			console.log(
 				"Ok, aborting domain purchase. Continuing with the next step."
 			)
-			return
+			return false
 		}
 		console.log("Great, attempting to purchase domain...")
 
@@ -128,6 +128,7 @@ class Gandi {
 		console.log(
 			"You can view the purchased domain in the Gandi admin console at https://admin.gandi.net/domain"
 		)
+		return true
 	}
 
 	private async showPurchaseConfirmationPrompt(
@@ -292,34 +293,6 @@ class Gandi {
 			return Promise.reject(error)
 		}
 	}
-
-	// 	func setupEmailForwarding(forwardingBody: EmailForwardingBody) -> Promise<Void> {
-	//         var request = URLRequest(url: URL(string: "https://api.gandi.net/v5/email/forwards/\(domain)")!)
-	//         request.httpMethod = "POST"
-	//         request.addValue("Apikey \(apiKey)", forHTTPHeaderField: "Authorization")
-	//         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-	//         let jsonEncoder = JSONEncoder()
-	//         let encodedBody = try! jsonEncoder.encode(forwardingBody)
-	//         request.httpBody = encodedBody
-
-	//         return firstly {
-	//             URLSession.shared.dataTask(.promise, with: request)
-	//         }.compactMap { (data, response) -> Void in
-	// //            printResponse(data, response, nil)
-	//             if let error = try? jsonDecoder.decode(EmailForwardingError.self, from: data),
-	//                 let first = error.errors.first,
-	//                 first.description.contains("forward adress already exist") {
-	//                 throw EmailError.forwardAlreadyExistsError
-	//             }
-
-	//             guard
-	//                 let response = try? jsonDecoder.decode(EmailForwardingResponse.self, from: data),
-	//                 response.message == "Forward created."
-	//                 else {
-	//                     throw EmailError.forwardCreationError
-	//             }
-	//         }
-	// 	}
 
 	private async getMailboxes(): Promise<Mailbox[]> {
 		const response = await this.axios.get<Mailbox[]>(

@@ -5,9 +5,8 @@ import { configValues, UnifiedConfig } from "../config/UnifiedConfig"
 import cli from "cli-ux"
 import chalk from "chalk"
 import * as fs from "fs-extra"
-import * as child_process from "child_process"
-const NetlifyCLIInit = require("netlify-cli/src/commands/init.js")
-
+import * as os from "os"
+import Netlify from "../hosting/netlify"
 const { Input } = require("enquirer")
 
 export default class Launch extends Command {
@@ -44,52 +43,19 @@ export default class Launch extends Command {
 			const domain = await this.parseDomain(args)
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
-			await this.purchaseDomain(domain)
-			await this.createMailbox(domain)
-			await this.setupEmailForwarding(domain)
-			await this.netlifyDeploy()
+			const isDomainOwned = await this.purchaseDomain(domain)
+			if (isDomainOwned) {
+				await this.createMailbox(domain)
+				await this.setupEmailForwarding(domain)
+			} else {
+				console.log("Skipping Email setup since domain is not owned.")
+			}
+			const netlify = new Netlify(domain, this.unifiedConfig)
+			await netlify.setupContinousDeployment()
+			await netlify.addDomainToSite()
 		} catch (error) {
 			this.handleError(error)
 		}
-	}
-
-	private async netlifyDeploy() {
-		const netlifySiteId = await this.readLocalNetlifySiteId()
-		if (netlifySiteId) {
-			console.log(
-				`Seems like ${chalk.greenBright(
-					"continuous deployment"
-				)} with ${chalk.greenBright(
-					"Netlify"
-				)} has already been set up. Anything you ${chalk.greenBright(
-					"push"
-				)} to ${chalk.greenBright(
-					"master"
-				)} branch should automatically be deployed.`
-			)
-			return
-		}
-
-		console.log(
-			"Will now set up continous deployment with Netlify. Please follow the instructions from Netlify CLI."
-		)
-		await NetlifyCLIInit.run([])
-		console.log(
-			`${chalk.greenBright(
-				"Continuous deployment"
-			)} was set up successfully! Anything you ${chalk.greenBright(
-				"push"
-			)} to ${chalk.greenBright(
-				"master"
-			)} branch will automatically be deployed.`
-		)
-	}
-
-	private async readLocalNetlifySiteId() {
-		const netlifyJSONPath = path.join(process.cwd(), "/.netlify/state.json")
-		const netlifyJSON = await fs.readJSON(netlifyJSONPath)
-		const netlifySiteId = netlifyJSON.siteId
-		return netlifySiteId
 	}
 
 	private async createMailbox(domain: string) {
@@ -150,16 +116,18 @@ export default class Launch extends Command {
 		}
 	}
 
-	private async purchaseDomain(domain: string) {
+	private async purchaseDomain(domain: string): Promise<boolean> {
 		this.log(`Checking availability for domain "${domain}"...`)
 		const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 		this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 		const isDomainOwned = await this.gandi.isDomainAlreadyOwned()
 		if (!isDomainOwned) {
-			await this.gandi.performDomainPurchaseSequence()
+			return await this.gandi.performDomainPurchaseSequence()
 		} else {
 			this.log(`Seems like you already own \"${domain}\".`)
 		}
+
+		return true
 	}
 
 	private async setupConfig(parsedFlags: any): Promise<UnifiedConfig> {
