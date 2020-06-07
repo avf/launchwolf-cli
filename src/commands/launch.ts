@@ -19,6 +19,7 @@ import Mailjet from "../mailing/mailjet"
 
 export default class Launch extends Command {
 	static description = "Launches a new website."
+	static usage = "launch example.com"
 
 	static generateFlagsFromConfig(cfg: any) {
 		const val: any = Object.keys(cfg)
