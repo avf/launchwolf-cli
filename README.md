@@ -2,65 +2,27 @@ launchwolf
 ==========
 
 
-
-[![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/launchwolf.svg)](https://npmjs.org/package/launchwolf)
-[![Downloads/week](https://img.shields.io/npm/dw/launchwolf.svg)](https://npmjs.org/package/launchwolf)
+[![Version](https://img.shields.io/npm/v/launchwolf.svg)](https://npmjs.org/package/launchwolf-cli)
+[![Downloads/week](https://img.shields.io/npm/dw/launchwolf.svg)](https://npmjs.org/package/launchwolf-cli)
 [![License](https://img.shields.io/npm/l/launchwolf.svg)](https://github.com/avf/launchwolf-cli/blob/master/package.json)
 
-<!-- toc -->
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
-# Usage
-<!-- usage -->
-```sh-session
-$ npm install -g launchwolf
-$ launchwolf COMMAND
-running command...
-$ launchwolf (-v|--version|version)
-launchwolf/1.0.0 darwin-x64 node-v13.13.0
-$ launchwolf --help [COMMAND]
-USAGE
-  $ launchwolf COMMAND
-...
-```
-<!-- usagestop -->
-# Commands
-<!-- commands -->
-* [`launchwolf help [COMMAND]`](#launchwolf-help-command)
-* [`launchwolf launch [FILE]`](#launchwolf-launch-file)
+# LaunchWolf
 
-## `launchwolf help [COMMAND]`
+LaunchWolf is a command line tool that allows you to create and deploy MVP websites with a single command. Running `launchwolf launch example.com` will:
 
-display help for launchwolf
+- Purchase the domain at gandi.net (more registrars will be supported in the future)
+- Set up a mailbox for your new domain
+- Set up email forwarding to an address of your choice (optional)
+- Set up continuous deployment to Netlify
+- Set up your DNS records + SSL for the new domain so that they point to Netlify
+- Set up an email newsletter subscription box via mailjet.com (optional)
 
-```
-USAGE
-  $ launchwolf help [COMMAND]
+Everything is already integrated and ready to go.
 
-ARGUMENTS
-  COMMAND  command to show help for
+Other than the domain purchase, all services are free to get started!
 
-OPTIONS
-  --all  see all commands in CLI
-```
+## Usage
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
-
-## `launchwolf launch [FILE]`
-
-describe the command here
-
-```
-USAGE
-  $ launchwolf launch [FILE]
-
-OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
-```
-
-_See code: [src/commands/launch.ts](https://github.com/avf/launchwolf-cli/blob/v1.0.0/src/commands/launch.ts)_
-<!-- commandsstop -->
+- Create a static website. For example, you could use your favorite static site generator.
+- Run `launchwolf launch example.com`
+- Follow the steps in the interactive prompt!
