@@ -1,6 +1,6 @@
 import { flags } from "@oclif/command"
 import * as fs from "fs-extra"
-import { CustomForm } from "../utils/CustomForm"
+const CustomForm = require("../utils/CustomForm.js")
 import chalk from "chalk"
 import cli from "cli-ux"
 import * as os from "os"
