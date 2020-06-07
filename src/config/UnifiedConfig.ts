@@ -1,7 +1,18 @@
 import { flags } from "@oclif/command"
 import * as fs from "fs-extra"
 import { CustomForm } from "../utils/CustomForm"
-const { Password, Confirm, AutoComplete, Select, Snippet } = require("enquirer")
+import chalk from "chalk"
+import { EventEmitter } from "events"
+import cli from "cli-ux"
+
+const {
+	Password,
+	Confirm,
+	AutoComplete,
+	Select,
+	Snippet,
+	List,
+} = require("enquirer")
 const countries = require("./countries.json")
 const domainPurchaseCurrencyOptions = ["EUR", "USD", "GBP", "TWD", "CNY"]
 
@@ -133,16 +144,47 @@ export const configValues = {
 	},
 	email: {
 		prompt: async (promptArgs: any) => {
+			const domain = promptArgs.domain
 			const prompt = new Snippet({
 				name: "email",
 				message: "What should your primary email address be?",
 				required: true,
-				template: `\${primaryEmail}@${promptArgs.domain}`,
+				template: `\${primaryEmail}@${domain}`,
 			})
 
 			const primaryEmailResult = await prompt.run()
 			const primaryEmail = primaryEmailResult.values.primaryEmail
-			return primaryEmail
+			const passwordPrompt = new Password({
+				name: "emailPassword",
+				message: "Please create a password for the new email account.",
+			})
+			const password = await passwordPrompt.run()
+			const listPrompt = new List({
+				name: "aliases",
+				message: `You can also set up email aliases. Type your aliases here as a comma-separated list.\nFor example, you can set up:\n${chalk.green(
+					"support"
+				)}@${domain}\n${chalk.green(
+					"hello"
+				)}@${domain}\nTo do this, type:\n ${chalk.green(
+					"support, hello"
+				)}\nOr, just press return to skip setting up aliases.`,
+			})
+			let aliases = await listPrompt.run()
+			aliases = aliases.map((elem: any) => elem.replace(`@${domain}`, ""))
+
+			const forwardingPrompt = new List({
+				name: "forwardingAddresses",
+				message: `You can also set up email forwarding to existing addresses. Type your existing email addresses here, as a comma-separated list.\nFor example:\n${chalk.green(
+					"yourname@gmail.com, yourname@otherdomain.com"
+				)}\nOr, just press return to skip setting up forwarding addresses.`,
+			})
+			let forwardingAddresses = await forwardingPrompt.run()
+			return {
+				primaryEmail,
+				password,
+				aliases,
+				forwardingAddresses,
+			}
 		},
 	},
 }
@@ -169,9 +211,17 @@ export class UnifiedConfig {
 
 	public async readConfig() {
 		if (await fs.pathExists(this.localConfigPath)) {
+			console.log(
+				`Using local config at ${chalk.cyan(this.localConfigPath)}`
+			)
 			this.localConfig = await fs.readJSON(this.localConfigPath)
 		}
 		if (await fs.pathExists(this.globalConfigPath)) {
+			console.log(
+				`Using global config at ${chalk.cyan(
+					this.globalConfigPath
+				)}. Local config values are preferred when present.`
+			)
 			this.globalConfig = await fs.readJSON(this.globalConfigPath)
 		}
 	}

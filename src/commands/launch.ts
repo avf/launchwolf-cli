@@ -32,9 +32,9 @@ export default class Launch extends Command {
 	gandi!: Gandi
 	async run() {
 		try {
+			this.log("Welcome to LaunchWolf!")
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
-			this.log("Welcome to LaunchWolf!")
 			const domain = await this.parseDomain(args)
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)

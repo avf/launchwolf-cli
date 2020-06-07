@@ -224,14 +224,12 @@ class Gandi {
 	}
 
 	public async doesMailboxExist(): Promise<boolean> {
-		const primaryMailboxName = await this.unifiedConfig.get("email", {
+		const emailConfig = await this.unifiedConfig.get("email", {
 			domain: this.domain,
 		})
-		console.log(primaryMailboxName)
 		const mailboxes = await this.getMailboxes()
-		console.log(mailboxes)
 		return (
-			mailboxes.filter((elem) => elem.login === primaryMailboxName)
+			mailboxes.filter((elem) => elem.login === emailConfig.primaryEmail)
 				.length > 0
 		)
 	}
