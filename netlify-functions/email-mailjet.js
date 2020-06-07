@@ -7,11 +7,12 @@ exports.handler = function (event, context, callback) {
 		callback(new Error("Unsupported http method."), null)
 	}
 	const requestBody = JSON.parse(event.body)
-	if (requestBody.honeypot) {
+	if (requestBody["launchwolf-honeypot"]) {
 		callback(
 			new Error(
 				"Spam protection triggered. Please do not fill out the extra email field."
-			)
+			),
+			null
 		)
 	}
 	const contact = JSON.stringify({
@@ -20,13 +21,24 @@ exports.handler = function (event, context, callback) {
 		Action: "addforce",
 	})
 
-	addContact(contact, (error, data) => {
-		callback(error, { statusCode: 200, body: data })
+	addContact(contact, (error, data, statusCode) => {
+		console.log("added: ", error, data)
+		if (error) {
+			callback(error, null)
+		} else {
+			callback(null, {
+				statusCode: statusCode,
+				body: data,
+				headers: {
+					"Access-Control-Allow-Origin": "*",
+				},
+			})
+		}
 	})
 }
 
 function addContact(contact, callback) {
-	const list_ID = ""
+	const list_ID = process.env.MAILJET_LIST_ID
 	const mailjetAPIKey = process.env.MAILJET_PUBLIC_API_KEY
 	const mailjetSecretKey = process.env.MAILJET_SECRET_API_KEY
 
@@ -36,7 +48,6 @@ function addContact(contact, callback) {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			// "Content-Length": data.length,
 			Authorization:
 				"Basic " +
 				Buffer.from(mailjetAPIKey + ":" + mailjetSecretKey).toString(
@@ -56,12 +67,12 @@ function addContact(contact, callback) {
 		// The whole response has been received.
 		resp.on("end", () => {
 			// console.log(JSON.parse(data).explanation)
-			callback(null, data)
+			callback(null, data, resp.statusCode)
 		})
 	})
 
 	request.on("error", (error) => {
-		callback(error, null)
+		callback(error, null, 500)
 	})
 
 	request.write(contact)

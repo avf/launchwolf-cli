@@ -62,6 +62,10 @@
 				border-radius: 0.25rem;
 			}
 
+			.launchwolf-subscribe-button:not(:disabled):not(.disabled) {
+				cursor: pointer;
+			}
+
 			.launchwolf-alert {
 				padding: 0.75rem 1.25rem;
 				margin-top: 1rem;
@@ -91,7 +95,8 @@
 					Want to learn more? Sign up for our newsletter.
 				</h5>
 				<form
-					action=""
+					action="http://localhost:8888/.netlify/functions/email-mailjet"
+					method="POST"
 					name="launchwolf-subscribe-form"
 					onsubmit="launchwolf_subscribeFormSubmitted(event)"
 				>
@@ -99,15 +104,17 @@
 						type="text"
 						value=""
 						placeholder="Your First Name"
-						name="FNAME"
+						name="firstname"
 						class="launchwolf-form-control launchwolf-bordered"
+						required
 					/>
 					<input
 						type="email"
 						value=""
 						placeholder="Your Email"
-						name="EMAIL"
+						name="email"
 						class="launchwolf-form-control launchwolf-bordered"
+						required
 					/>
 					<small class="launchwolf-subscribe-form-small-text"
 						>Low volume, unsubscribe anytime, no spam.</small
@@ -125,12 +132,13 @@
 						/>
 					</div>
 
-					<input
+					<button
 						type="submit"
-						value="Subscribe"
 						name="subscribe"
 						class="launchwolf-subscribe-button"
-					/>
+					>
+						Subscribe
+					</button>
 					<div
 						style="display: none;"
 						role="alert"
@@ -153,65 +161,49 @@
 		</main>
 		<!-- Begin LaunchWolf Subscribe Form Handler -->
 		<script>
-			function launchwolf_subscribeFormSubmitted(event) {
-				console.log("submit called", event)
+			async function launchwolf_subscribeFormSubmitted(event) {
 				event.preventDefault()
+				const form = event.target
+				const method = form.getAttribute("method")
+				const url = form.getAttribute("action")
+				const allInputs = form.querySelectorAll("input")
+				const reservedProperties = ["email", "launchwolf-honeypot"]
+				const body = { properties: {} }
+				for (var input of allInputs) {
+					if (reservedProperties.includes(input.name)) {
+						body[input.name] = input.value
+					} else {
+						body.properties[input.name] = input.value
+					}
+				}
+				const successAlert = form.querySelector(
+					".launchwolf-alert-success"
+				)
+				const errorAlert = form.querySelector(".launchwolf-alert-error")
+				try {
+					const response = await fetch(url, {
+						method: method,
+						body: JSON.stringify(body),
+					})
+					const responseBody = await response.json()
+					if (!responseBody) {
+						throw new Error()
+					}
+					successAlert.style.display = "block"
+					errorAlert.style.display = "none"
+					console.log(
+						"submit called: ",
+						method,
+						url,
+						body,
+						responseBody
+					)
+				} catch (error) {
+					successAlert.style.display = "none"
+					errorAlert.style.display = "block"
+				}
 				return false
 			}
-			// $(document).ready(function () {
-			// 	// I only have one form on the page but you can be more specific if need be.
-			// 	var allForms = $(".newsletter-card")
-			// 	allForms.each(function (index, elem) {
-			// 		console.log($(this).find("form"))
-			// 		var currentCard = $(this)
-			// 		currentCard.find("form").submit(function (e) {
-			// 			e.preventDefault()
-			// 			var currentForm = $(this)
-			// 			if (currentForm.length > 0) {
-			// 				// allForms.each(function(index, elem) {
-			// 				//     $(elem).hide();
-			// 				// });
-			// 				// return;
-			// 				$.ajax({
-			// 					type: currentForm.attr("method"),
-			// 					url: currentForm.attr("action"),
-			// 					data: currentForm.serialize(),
-			// 					cache: false,
-			// 					dataType: "json",
-			// 					contentType: "application/json; charset=utf-8",
-			// 					error: function (err) {
-			// 						alert(
-			// 							"Could not connect to the registration server. Please try again later."
-			// 						)
-			// 					},
-			// 					success: function (data) {
-			// 						var successAlert = currentForm.find(
-			// 							".alert-success"
-			// 						)
-			// 						var failureAlert = currentForm.find(
-			// 							".alert-danger"
-			// 						)
-
-			// 						if (data.result != "success") {
-			// 							successAlert.hide(200)
-			// 							failureAlert.html(data.msg)
-			// 							failureAlert.show(200)
-			// 							// Something went wrong, do something to notify the user. maybe alert(data.msg);
-			// 						} else {
-			// 							successAlert.show(200)
-			// 							failureAlert.hide(200)
-			// 							allForms.each(function (index, elem) {
-			// 								if (!$(elem).is(currentCard)) {
-			// 									$(elem).hide()
-			// 								}
-			// 							})
-			// 						}
-			// 					},
-			// 				})
-			// 			}
-			// 		})
-			// 	})
-			// })
 		</script>
 		<!-- End LaunchWolf Subscribe Form Handler -->
 	</body>
