@@ -2,9 +2,9 @@ launchwolf
 ==========
 
 
-[![Version](https://img.shields.io/npm/v/launchwolf.svg)](https://npmjs.org/package/launchwolf-cli)
-[![Downloads/week](https://img.shields.io/npm/dw/launchwolf.svg)](https://npmjs.org/package/launchwolf-cli)
-[![License](https://img.shields.io/npm/l/launchwolf.svg)](https://github.com/avf/launchwolf-cli/blob/master/package.json)
+[![Version](https://img.shields.io/npm/v/launchwolf-cli.svg)](https://npmjs.org/package/launchwolf-cli)
+[![Downloads/week](https://img.shields.io/npm/dw/launchwolf-cli.svg)](https://npmjs.org/package/launchwolf-cli)
+[![License](https://img.shields.io/npm/l/launchwolf-cli.svg)](https://github.com/avf/launchwolf-cli/blob/master/package.json)
 
 # LaunchWolf
 
