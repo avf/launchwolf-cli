@@ -4,8 +4,215 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
+		<style>
+			main {
+				width: 66%;
+				margin: auto;
+			}
+		</style>
+		<!-- Begin LaunchWolf Subscribe Form Styles -->
+		<style>
+			.launchwolf-subscribe-form {
+				text-align: center;
+				font-family: Helvetica, sans-serif;
+				padding: 1rem;
+				box-sizing: border-box;
+			}
+
+			.launchwolf-subscribe-form * {
+				box-sizing: border-box;
+			}
+
+			.launchwolf-subscribe-form-title {
+				margin: 0.5rem auto;
+				font-weight: 900;
+				font-size: 1.125rem;
+			}
+
+			.launchwolf-form-control {
+				display: block;
+				width: 100%;
+				font-size: 1rem;
+				padding: 0.375rem 0.75rem;
+				margin: 1rem 0;
+			}
+
+			.launchwolf-subscribe-form-small-text {
+				display: block;
+				color: #6c757d;
+				font-size: 0.75rem;
+				margin: 1rem 0;
+			}
+
+			.launchwolf-bordered {
+				border: 1px solid rgba(0, 0, 0, 0.125);
+				border-radius: 0.25rem;
+			}
+
+			.launchwolf-subscribe-button {
+				color: #fff;
+				background-color: #007bff;
+				border-color: #007bff;
+				text-align: center;
+				white-space: nowrap;
+				font-weight: 400;
+				font-size: 1rem;
+				padding: 0.375rem 0.75rem;
+				line-height: 1.5;
+				border-radius: 0.25rem;
+			}
+
+			.launchwolf-alert {
+				padding: 0.75rem 1.25rem;
+				margin-top: 1rem;
+				border: 1px solid transparent;
+				border-radius: 0.25rem;
+			}
+
+			.launchwolf-alert-success {
+				color: #155724;
+				background-color: #d4edda;
+				border-color: #c3e6cb;
+			}
+
+			.launchwolf-alert-error {
+				color: #721c24;
+				background-color: #f8d7da;
+				border-color: #f5c6cb;
+			}
+		</style>
+		<!-- End LaunchWolf Subscribe Form Styles -->
 	</head>
 	<body>
-		Test site
+		<main>
+			<!-- Begin LaunchWolf Subscribe Form -->
+			<div class="launchwolf-subscribe-form launchwolf-bordered">
+				<h5 class="launchwolf-subscribe-form-title">
+					Want to learn more? Sign up for our newsletter.
+				</h5>
+				<form
+					action=""
+					name="launchwolf-subscribe-form"
+					onsubmit="launchwolf_subscribeFormSubmitted(event)"
+				>
+					<input
+						type="text"
+						value=""
+						placeholder="Your First Name"
+						name="FNAME"
+						class="launchwolf-form-control launchwolf-bordered"
+					/>
+					<input
+						type="email"
+						value=""
+						placeholder="Your Email"
+						name="EMAIL"
+						class="launchwolf-form-control launchwolf-bordered"
+					/>
+					<small class="launchwolf-subscribe-form-small-text"
+						>Low volume, unsubscribe anytime, no spam.</small
+					>
+					<!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+					<div
+						style="position: absolute; left: -5000px;"
+						aria-hidden="true"
+					>
+						<input
+							type="text"
+							name="launchwolf-honeypot"
+							tabindex="-1"
+							value=""
+						/>
+					</div>
+
+					<input
+						type="submit"
+						value="Subscribe"
+						name="subscribe"
+						class="launchwolf-subscribe-button"
+					/>
+					<div
+						style="display: none;"
+						role="alert"
+						class="launchwolf-alert launchwolf-alert-success"
+					>
+						Thanks for signing up!
+					</div>
+
+					<div
+						style="display: none;"
+						role="alert"
+						class="launchwolf-alert launchwolf-alert-error"
+					>
+						There was a problem signing up. Please try again. If
+						this persists, please contact us.
+					</div>
+				</form>
+			</div>
+			<!-- End LaunchWolf Subscribe Form -->
+		</main>
+		<!-- Begin LaunchWolf Subscribe Form Handler -->
+		<script>
+			function launchwolf_subscribeFormSubmitted(event) {
+				console.log("submit called", event)
+				event.preventDefault()
+				return false
+			}
+			// $(document).ready(function () {
+			// 	// I only have one form on the page but you can be more specific if need be.
+			// 	var allForms = $(".newsletter-card")
+			// 	allForms.each(function (index, elem) {
+			// 		console.log($(this).find("form"))
+			// 		var currentCard = $(this)
+			// 		currentCard.find("form").submit(function (e) {
+			// 			e.preventDefault()
+			// 			var currentForm = $(this)
+			// 			if (currentForm.length > 0) {
+			// 				// allForms.each(function(index, elem) {
+			// 				//     $(elem).hide();
+			// 				// });
+			// 				// return;
+			// 				$.ajax({
+			// 					type: currentForm.attr("method"),
+			// 					url: currentForm.attr("action"),
+			// 					data: currentForm.serialize(),
+			// 					cache: false,
+			// 					dataType: "json",
+			// 					contentType: "application/json; charset=utf-8",
+			// 					error: function (err) {
+			// 						alert(
+			// 							"Could not connect to the registration server. Please try again later."
+			// 						)
+			// 					},
+			// 					success: function (data) {
+			// 						var successAlert = currentForm.find(
+			// 							".alert-success"
+			// 						)
+			// 						var failureAlert = currentForm.find(
+			// 							".alert-danger"
+			// 						)
+
+			// 						if (data.result != "success") {
+			// 							successAlert.hide(200)
+			// 							failureAlert.html(data.msg)
+			// 							failureAlert.show(200)
+			// 							// Something went wrong, do something to notify the user. maybe alert(data.msg);
+			// 						} else {
+			// 							successAlert.show(200)
+			// 							failureAlert.hide(200)
+			// 							allForms.each(function (index, elem) {
+			// 								if (!$(elem).is(currentCard)) {
+			// 									$(elem).hide()
+			// 								}
+			// 							})
+			// 						}
+			// 					},
+			// 				})
+			// 			}
+			// 		})
+			// 	})
+			// })
+		</script>
+		<!-- End LaunchWolf Subscribe Form Handler -->
 	</body>
 </html>
