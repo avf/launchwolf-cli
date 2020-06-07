@@ -28,52 +28,68 @@ export default class Launch extends Command {
 
 	static args = [{ name: "url" }]
 
+	unifiedConfig!: UnifiedConfig
+
 	async run() {
 		try {
 			const { args, flags } = this.parse(Launch)
-			const localConfigPath = path.join(
-				process.cwd(),
-				"launchwolf-config.json"
-			)
-			const globalConfigPath = path.join(
-				this.config.configDir,
-				"launchwolf-global-config.json"
-			)
-			const unifiedConfig = new UnifiedConfig(
-				configValues,
-				flags,
-				localConfigPath,
-				globalConfigPath
-			)
-			await unifiedConfig.readConfig()
+			this.unifiedConfig = await this.setupConfig(flags)
 			this.log("Welcome to LaunchWolf!")
-			let domain = args.url
-			if (!domain) {
-				const prompt = new Input({
-					message:
-						'Please enter the domain you\'d like to use for your project (for example, "youridea.com").',
-				})
-				const answer = await prompt.run()
-				domain = answer
-			}
-
-			domain = domain.replace("https://", "")
-			domain = domain.replace("http://", "")
-			if (domain.slice(0, 4) === "www.") {
-				domain = domain.replace("www.", "")
-			}
-			this.log(`Checking availability for domain "${domain}"...`)
-			const gandiAPIKey = await unifiedConfig.get("gandiAPIKey")
-			const gandi = new Gandi(domain, gandiAPIKey, unifiedConfig)
-			const isDomainOwned = await gandi.isDomainAlreadyOwned()
-			if (!isDomainOwned) {
-				await gandi.performDomainPurchaseSequence()
-			} else {
-				this.log(`Seems like you already own \"${domain}\".`)
-			}
+			const domain = await this.parseDomain(args)
+			await this.purchaseDomain(domain)
 		} catch (error) {
 			this.handleError(error)
 		}
+	}
+
+	private async purchaseDomain(domain: string) {
+		this.log(`Checking availability for domain "${domain}"...`)
+		const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
+		const gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
+		const isDomainOwned = await gandi.isDomainAlreadyOwned()
+		if (!isDomainOwned) {
+			await gandi.performDomainPurchaseSequence()
+		} else {
+			this.log(`Seems like you already own \"${domain}\".`)
+		}
+	}
+
+	private async setupConfig(parsedFlags: any): Promise<UnifiedConfig> {
+		const localConfigPath = path.join(
+			process.cwd(),
+			"launchwolf-config.json"
+		)
+		const globalConfigPath = path.join(
+			this.config.configDir,
+			"launchwolf-global-config.json"
+		)
+		const unifiedConfig = new UnifiedConfig(
+			configValues,
+			parsedFlags,
+			localConfigPath,
+			globalConfigPath
+		)
+		await unifiedConfig.readConfig()
+		return unifiedConfig
+	}
+
+	private async parseDomain(args: any): Promise<string> {
+		let domain = args.url
+		if (!domain) {
+			const prompt = new Input({
+				message:
+					'Please enter the domain you\'d like to use for your project (for example, "youridea.com").',
+			})
+			const answer = await prompt.run()
+			domain = answer
+		}
+
+		domain = domain.replace("https://", "")
+		domain = domain.replace("http://", "")
+		if (domain.slice(0, 4) === "www.") {
+			domain = domain.replace("www.", "")
+		}
+		return domain
 	}
 
 	private handleError(error: any) {
