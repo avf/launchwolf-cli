@@ -1,12 +1,8 @@
-launchwolf
-==========
-
+# LaunchWolf
 
 [![Version](https://img.shields.io/npm/v/launchwolf-cli.svg)](https://npmjs.org/package/launchwolf-cli)
 [![Downloads/week](https://img.shields.io/npm/dw/launchwolf-cli.svg)](https://npmjs.org/package/launchwolf-cli)
 [![License](https://img.shields.io/npm/l/launchwolf-cli.svg)](https://github.com/avf/launchwolf-cli/blob/master/package.json)
-
-# LaunchWolf
 
 LaunchWolf is a command line tool that allows you to create and deploy MVP websites with a single command. Usage:
 
