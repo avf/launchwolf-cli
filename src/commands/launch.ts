@@ -2,6 +2,9 @@ import { Command, flags } from "@oclif/command"
 import Gandi from "../domains/gandi"
 import * as path from "path"
 import { configValues, UnifiedConfig } from "../config/UnifiedConfig"
+import cli from "cli-ux"
+import chalk from "chalk"
+
 const { Input } = require("enquirer")
 
 export default class Launch extends Command {
@@ -39,8 +42,27 @@ export default class Launch extends Command {
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 			await this.purchaseDomain(domain)
+			console.log("Next, we'll set up your email account.")
 			const doesMailboxExist = await this.gandi.doesMailboxExist()
-			console.log(doesMailboxExist)
+			const emailConfig = await this.unifiedConfig.get("email", {
+				domain,
+			})
+			if (doesMailboxExist === false) {
+				cli.action.start("Creating the new mailbox")
+				await this.gandi.createMailbox({
+					login: emailConfig.primaryEmail,
+					mailbox_type: "standard",
+					password: emailConfig.password,
+					aliases: emailConfig.aliases,
+				})
+				cli.action.stop()
+			} else {
+				console.log(
+					`Mailbox ${chalk.cyan(
+						emailConfig.primaryEmail + "@" + domain
+					)} already exists, continuing.`
+				)
+			}
 		} catch (error) {
 			this.handleError(error)
 		}

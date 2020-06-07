@@ -2,7 +2,6 @@ import { flags } from "@oclif/command"
 import * as fs from "fs-extra"
 import { CustomForm } from "../utils/CustomForm"
 import chalk from "chalk"
-import { EventEmitter } from "events"
 import cli from "cli-ux"
 
 const {
@@ -156,7 +155,8 @@ export const configValues = {
 			const primaryEmail = primaryEmailResult.values.primaryEmail
 			const passwordPrompt = new Password({
 				name: "emailPassword",
-				message: "Please create a password for the new email account.",
+				message:
+					"Please create a password for the new email account. Must be at least 8 characters long and less than 200, have at least one lower char, one upper char, one digit and one special char.",
 			})
 			const password = await passwordPrompt.run()
 			const listPrompt = new List({
@@ -220,7 +220,9 @@ export class UnifiedConfig {
 			console.log(
 				`Using global config at ${chalk.cyan(
 					this.globalConfigPath
-				)}. Local config values are preferred when present.`
+				)}. Local config values at ${chalk.cyan(
+					this.localConfigPath
+				)} are preferred when present.`
 			)
 			this.globalConfig = await fs.readJSON(this.globalConfigPath)
 		}

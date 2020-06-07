@@ -3,6 +3,7 @@ import { UnifiedConfig } from "../config/UnifiedConfig"
 import { poll } from "../utils/poll"
 const { Input, Confirm } = require("enquirer")
 const domainPurchaseDryRun = false
+const mailboxCreationDryRun = true
 
 interface PurchasedDomainDetails {
 	status: string[]
@@ -34,6 +35,13 @@ interface Mailbox {
 	domain: string
 	mailbox_type: string
 	login: string
+}
+
+interface CreateMailboxBody {
+	login: string
+	mailbox_type: string
+	password: string
+	aliases?: string[]
 }
 
 class Gandi {
@@ -232,6 +240,26 @@ class Gandi {
 			mailboxes.filter((elem) => elem.login === emailConfig.primaryEmail)
 				.length > 0
 		)
+	}
+
+	public async createMailbox(mailboxBody: CreateMailboxBody): Promise<void> {
+		const response = await this.axios.post(
+			`/email/mailboxes/${this.domain}`,
+			mailboxBody,
+			{
+				headers: { "Dry-Run": mailboxCreationDryRun ? "1" : "0" },
+			}
+		)
+		const data = response.data
+		if (mailboxCreationDryRun) {
+			if (data?.status !== "success") {
+				return Promise.reject(response.data)
+			}
+			return
+		} else if (data?.message !== "Creation operation launched") {
+			return Promise.reject(response.data)
+		}
+		return
 	}
 
 	private async getMailboxes(): Promise<Mailbox[]> {
