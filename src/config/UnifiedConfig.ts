@@ -21,10 +21,10 @@ const domainPurchaseCurrencyOptions = ["EUR", "USD", "GBP", "TWD", "CNY"]
 // TODO: Add config version
 export const configValues = {
 	gandiAPIKey: {
-		flag: flags.string({
-			description:
-				"API key for gandi.net. You can find instructions on how to create one here: https://github.com/avf/launchwolf-cli#domains",
-		}),
+		// flag: flags.string({
+		// 	description:
+		// 		"API key for gandi.net. You can find instructions on how to create one here: https://github.com/avf/launchwolf-cli#domains",
+		// }),
 		prompt: () => {
 			const prompt = new Password({
 				message: `To use this tool, you need an account at gandi.net
@@ -43,10 +43,10 @@ export const configValues = {
 		},
 	},
 	domainPurchaseCurrency: {
-		flag: flags.string({
-			description: "Preferred currency for new domain purchases.",
-			options: domainPurchaseCurrencyOptions,
-		}),
+		// flag: flags.string({
+		// 	description: "Preferred currency for new domain purchases.",
+		// 	options: domainPurchaseCurrencyOptions,
+		// }),
 		prompt: () => {
 			const typePrompt = new Select({
 				name: "domainPurchaseCurrency",
@@ -148,10 +148,11 @@ export const configValues = {
 		},
 	},
 	domainPurchaseDurationInYears: {
-		flag: flags.integer({
-			description: "Payment duration for new domains, in years. ",
-			default: 1,
-		}),
+		// flag: flags.integer({
+		// 	description: "Payment duration for new domains, in years. ",
+		// 	default: 1,
+		// }),
+		defaultValue: 1,
 	},
 	email: {
 		prompt: async (promptArgs: any) => {

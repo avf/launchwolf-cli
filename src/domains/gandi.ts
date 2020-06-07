@@ -4,6 +4,13 @@ import { poll } from "../utils/poll"
 const { Input, Confirm } = require("enquirer")
 const domainPurchaseDryRun = false
 const mailboxCreationDryRun = false
+import {
+	getFeatureTable,
+	FeatureStatus,
+	getFeatureByName,
+	getSingleFeatureTable,
+	Feature,
+} from "../utils/FeatureTable"
 
 interface PurchasedDomainDetails {
 	status: string[]
@@ -56,6 +63,7 @@ class Gandi {
 	domain: string
 	axios: AxiosInstance
 	unifiedConfig: UnifiedConfig
+	domainsFeature: Feature
 
 	public constructor(
 		domain: string,
@@ -70,6 +78,7 @@ class Gandi {
 			},
 		})
 		this.unifiedConfig = unifiedConfig
+		this.domainsFeature = getFeatureByName("Domain")
 	}
 
 	public async isDomainAlreadyOwned(): Promise<boolean> {
@@ -115,9 +124,7 @@ class Gandi {
 			domainAvailability.currency
 		)
 		if (!shouldPurchase) {
-			console.log(
-				"Ok, aborting domain purchase. Continuing with the next step."
-			)
+			console.log("Ok, aborting domain purchase.")
 			return false
 		}
 		console.log("Great, attempting to purchase domain...")
@@ -266,11 +273,17 @@ class Gandi {
 		currency: string
 	): Promise<boolean> {
 		// TODO: Add flag that skips this prompt
+		const domainPurchasePrice =
+			domainPurchaseDurationInYears * price + " " + currency
 		const prompt = new Confirm({
 			name: "purchaseQuestion",
-			message: `Do you want to purchase domain "${this.domain}" at ${
-				domainPurchaseDurationInYears * price
-			}${currency} total for ${domainPurchaseDurationInYears} ${
+			message: `Awesome, ${this.domainsFeature.color(
+				this.domain
+			)} is available! Do you want to purchase domain ${this.domainsFeature.color(
+				this.domain
+			)} at ${this.domainsFeature.color(
+				domainPurchasePrice
+			)} total for ${domainPurchaseDurationInYears} ${
 				domainPurchaseDurationInYears === 1 ? "year" : "years"
 			}?`,
 			initial: false,

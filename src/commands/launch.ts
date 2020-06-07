@@ -66,17 +66,17 @@ export default class Launch extends Command {
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 			const isDomainOwned = await this.purchaseDomain(domain)
+			if (!isDomainOwned) {
+				this.log(
+					"Stopping now, since domain ownership couldn't be confirmed."
+				)
+				return
+			}
 			const emailFeature = getFeatureByName("Email")
 			emailFeature.status = FeatureStatus.inProgress
 			this.log(getStatusTable())
-			if (isDomainOwned) {
-				await this.createMailbox(domain)
-				await this.setupEmailForwarding(domain)
-			} else {
-				this.log(
-					"Skipping Email setup since domain ownership couldn't be confirmed."
-				)
-			}
+			await this.createMailbox(domain)
+			await this.setupEmailForwarding(domain)
 			emailFeature.status = FeatureStatus.done
 			const hostingFeature = getFeatureByName("Hosting")
 			hostingFeature.status = FeatureStatus.inProgress
@@ -84,15 +84,9 @@ export default class Launch extends Command {
 
 			const netlify = new Netlify(domain, this.unifiedConfig)
 			await netlify.setupContinousDeployment()
-			if (isDomainOwned) {
-				const netlifySite = await netlify.addDomainToSite()
-				const aliasAndCNAMERecordValue = `${netlifySite.name}.netlify.com.`
-				await this.gandi.updateDNS(aliasAndCNAMERecordValue)
-			} else {
-				console.log(
-					"Skipping domain and DNS setup for Netlify hosting, since domain ownership couldn't be confirmed."
-				)
-			}
+			const netlifySite = await netlify.addDomainToSite()
+			const aliasAndCNAMERecordValue = `${netlifySite.name}.netlify.com.`
+			await this.gandi.updateDNS(aliasAndCNAMERecordValue)
 
 			hostingFeature.status = FeatureStatus.done
 			await this.setupMailjet(domain)
