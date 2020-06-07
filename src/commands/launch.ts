@@ -8,6 +8,12 @@ import * as fs from "fs-extra"
 import * as os from "os"
 import Netlify from "../hosting/netlify"
 const { Input } = require("enquirer")
+import {
+	getFeatureTable,
+	FeatureStatus,
+	getFeatureByName,
+	getSingleFeatureTable,
+} from "../utils/FeatureTable"
 
 export default class Launch extends Command {
 	static description = "Launches a new website."
@@ -35,15 +41,31 @@ export default class Launch extends Command {
 
 	unifiedConfig!: UnifiedConfig
 	gandi!: Gandi
+
 	async run() {
 		try {
-			this.log("Welcome to LaunchWolf!")
+			this.log(`Welcome to LaunchWolf!`)
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
+			this.log(
+				`LaunchWolf will set up the following features for you. The end result will be a functioning, deployed website, like this one here: ${chalk.underline(
+					"https://demo.launchwolf.com"
+				)}`
+			)
+			this.log(getFeatureTable())
+			const hasBeenRunOnceBefore = await this.unifiedConfig.doesGlobalConfigExist()
+			if (!hasBeenRunOnceBefore) {
+				this.log(
+					"Since this is your first run, we need to grab some info from you to get started."
+				)
+			}
 			const domain = await this.parseDomain(args)
 			const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 			this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 			const isDomainOwned = await this.purchaseDomain(domain)
+			const emailFeature = getFeatureByName("Email")
+			emailFeature.status = FeatureStatus.inProgress
+			console.log(getFeatureTable())
 			if (isDomainOwned) {
 				await this.createMailbox(domain)
 				await this.setupEmailForwarding(domain)
@@ -52,6 +74,11 @@ export default class Launch extends Command {
 					"Skipping Email setup since domain ownership couldn't be confirmed."
 				)
 			}
+			emailFeature.status = FeatureStatus.done
+			const hostingFeature = getFeatureByName("Hosting")
+			hostingFeature.status = FeatureStatus.inProgress
+			console.log(getFeatureTable())
+
 			const netlify = new Netlify(domain, this.unifiedConfig)
 			await netlify.setupContinousDeployment()
 			if (isDomainOwned) {
@@ -63,12 +90,18 @@ export default class Launch extends Command {
 					"Skipping domain and DNS setup for Netlify hosting, since domain ownership couldn't be confirmed."
 				)
 			}
+
+			hostingFeature.status = FeatureStatus.done
+			const mailingListFeature = getFeatureByName("Mailing list")
+			mailingListFeature.status = FeatureStatus.inProgress
+			console.log(getFeatureTable())
 		} catch (error) {
 			this.handleError(error)
 		}
 	}
 
 	private async createMailbox(domain: string) {
+		const emailFeature = getFeatureByName("Email")
 		console.log("Next, we'll set up your email account.")
 		const doesMailboxExist = await this.gandi.doesMailboxExist()
 		const emailConfig = await this.unifiedConfig.get("email", {
@@ -84,15 +117,15 @@ export default class Launch extends Command {
 			})
 			cli.action.stop()
 			console.log(
-				`Mailbox successfully created. You can access it at ${chalk.greenBright(
+				`Mailbox successfully created. You can access it at ${emailFeature.color(
 					"webmail." + domain
-				)} using your email ${chalk.cyanBright(
+				)} using your email ${emailFeature.color(
 					emailConfig.primaryEmail + "@" + domain
 				)} and the password you entered before.`
 			)
 		} else {
 			console.log(
-				`Mailbox ${chalk.cyanBright(
+				`Mailbox ${emailFeature.color(
 					emailConfig.primaryEmail + "@" + domain
 				)} already exists, continuing.`
 			)
@@ -100,13 +133,14 @@ export default class Launch extends Command {
 	}
 
 	private async setupEmailForwarding(domain: string) {
+		const emailFeature = getFeatureByName("Email")
 		try {
 			const emailConfig = await this.unifiedConfig.get("email", {
 				domain,
 			})
 			if (emailConfig.forwardingAddresses?.length > 0) {
 				cli.action.start(
-					`Setting up forwarding to ${chalk.cyanBright(
+					`Setting up forwarding to ${emailFeature.color(
 						emailConfig.forwardingAddresses
 					)}`
 				)
@@ -119,7 +153,7 @@ export default class Launch extends Command {
 		} catch (error) {
 			this.handleError(error)
 			console.log(
-				`Error creating email forward, skipping this step. Please set it up manually at ${chalk.greenBright(
+				`Error creating email forward, skipping this step. Please set it up manually at ${emailFeature.color(
 					"https://admin.gandi.net/domain"
 				)}`
 			)
@@ -127,14 +161,22 @@ export default class Launch extends Command {
 	}
 
 	private async purchaseDomain(domain: string): Promise<boolean> {
-		this.log(`Checking availability for domain "${domain}"...`)
+		const domainFeature = getFeatureByName("Domain")
+		domainFeature.status = FeatureStatus.inProgress
+		this.log("Let's get started with purchasing your domain.")
+		this.log(
+			`Checking availability for domain ${domainFeature.color(domain)}...`
+		)
 		const gandiAPIKey = await this.unifiedConfig.get("gandiAPIKey")
 		this.gandi = new Gandi(domain, gandiAPIKey, this.unifiedConfig)
 		const isDomainOwned = await this.gandi.isDomainAlreadyOwned()
+		domainFeature.status = FeatureStatus.done
 		if (!isDomainOwned) {
 			return await this.gandi.performDomainPurchaseSequence()
 		} else {
-			this.log(`Seems like you already own \"${domain}\".`)
+			this.log(
+				`Seems like you already own ${domainFeature.color(domain)}.`
+			)
 		}
 
 		return true

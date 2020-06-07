@@ -245,13 +245,13 @@ export class UnifiedConfig {
 	}
 
 	public async readConfig() {
-		if (await fs.pathExists(this.localConfigPath)) {
+		if (await this.doesLocalConfigExist()) {
 			console.log(
 				`Using local config at ${chalk.cyan(this.localConfigPath)}`
 			)
 			this.localConfig = await fs.readJSON(this.localConfigPath)
 		}
-		if (await fs.pathExists(this.globalConfigPath)) {
+		if (await this.doesGlobalConfigExist()) {
 			console.log(
 				`Using global config at ${chalk.cyan(
 					this.globalConfigPath
@@ -261,6 +261,14 @@ export class UnifiedConfig {
 			)
 			this.globalConfig = await fs.readJSON(this.globalConfigPath)
 		}
+	}
+
+	public async doesLocalConfigExist(): Promise<boolean> {
+		return await fs.pathExists(this.localConfigPath)
+	}
+
+	public async doesGlobalConfigExist(): Promise<boolean> {
+		return await fs.pathExists(this.globalConfigPath)
 	}
 
 	// Attempts to read config value from command line flags.
@@ -287,7 +295,7 @@ export class UnifiedConfig {
 			// TODO: Add check here to validate the input before saving. For example, for API keys, perform a quick GET request to some endpoint.
 			await this.save(key, resultFromPrompt)
 			return resultFromPrompt
-		} else if (this.possibleKeys[key].defaultValue) {
+		} else if (this.possibleKeys[key].defaultValue !== undefined) {
 			return Promise.resolve(this.possibleKeys[key].defaultValue)
 		}
 

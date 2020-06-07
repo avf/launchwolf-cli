@@ -5,27 +5,36 @@ import * as os from "os"
 import { UnifiedConfig } from "../config/UnifiedConfig"
 const NetlifyAPI = require("netlify")
 const NetlifyCLIInit = require("netlify-cli/src/commands/init.js")
+import {
+	getFeatureTable,
+	FeatureStatus,
+	getFeatureByName,
+	getSingleFeatureTable,
+	Feature,
+} from "../utils/FeatureTable"
 
 class Netlify {
 	domain: string
 	unifiedConfig: UnifiedConfig
+	hostingFeature: Feature
 
 	public constructor(domain: string, unifiedConfig: UnifiedConfig) {
 		this.domain = domain
 		this.unifiedConfig = unifiedConfig
+		this.hostingFeature = getFeatureByName("Hosting")
 	}
 
 	public async setupContinousDeployment() {
 		const netlifySiteId = await this.readLocalNetlifySiteId()
 		if (netlifySiteId) {
 			console.log(
-				`Seems like ${chalk.greenBright(
+				`Seems like ${this.hostingFeature.color(
 					"continuous deployment"
-				)} with ${chalk.greenBright(
+				)} with ${this.hostingFeature.color(
 					"Netlify"
-				)} has already been set up. Anything you ${chalk.greenBright(
+				)} has already been set up. Anything you ${this.hostingFeature.color(
 					"push"
-				)} to ${chalk.greenBright(
+				)} to ${this.hostingFeature.color(
 					"master"
 				)} branch should automatically be deployed.`
 			)
@@ -37,11 +46,11 @@ class Netlify {
 		)
 		await NetlifyCLIInit.run([])
 		console.log(
-			`${chalk.greenBright(
+			`${this.hostingFeature.color(
 				"Continuous deployment"
-			)} was set up successfully! Anything you ${chalk.greenBright(
+			)} was set up successfully! Anything you ${this.hostingFeature.color(
 				"push"
-			)} to ${chalk.greenBright(
+			)} to ${this.hostingFeature.color(
 				"master"
 			)} branch will automatically be deployed.`
 		)
