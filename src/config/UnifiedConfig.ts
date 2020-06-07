@@ -27,8 +27,17 @@ export const configValues = {
 		}),
 		prompt: () => {
 			const prompt = new Password({
-				message:
-					"Please enter the API key for gandi.net. You can find instructions on how to create one here: https://github.com/avf/launchwolf-cli#domains",
+				message: `To use this tool, you need an account at gandi.net
+	1. Sign up for a new account here. No need to purchase a domain yet. ${chalk.underline(
+		"https://account.gandi.net/en/create_account"
+	)}
+	2. Either add prepaid credit to your account or add a payment method. You can do so here: ${chalk.underline(
+		"https://admin.gandi.net/billing"
+	)}
+	3. Follow the Gandi docs to create an API key: ${chalk.underline(
+		"https://docs.gandi.net/en/domain_names/advanced_users/api.html"
+	)}
+	Please enter or paste your API key here:`,
 			})
 			return prompt.run()
 		},
@@ -229,12 +238,12 @@ export const configValues = {
 			)
 			const passwordPrompt = new Password({
 				name: "mailjetPublicKey",
-				message: "Please enter the Mailjet (public) API Key.",
+				message: "Please enter or paste the Mailjet (public) API Key.",
 			})
 			const mailjetPublicKey = await passwordPrompt.run()
 			const passwordPromptPrivate = new Password({
 				name: "mailjetPrivateKey",
-				message: "Please enter the Mailjet Secret Key.",
+				message: "Please enter or paste the Mailjet Secret Key.",
 			})
 			const mailjetPrivateKey = await passwordPromptPrivate.run()
 			return {
@@ -329,11 +338,11 @@ export class UnifiedConfig {
 		console.log(
 			`Saving value as "${key}" in ${
 				shouldSaveToLocalConfig ? "local" : "global"
-			} config file, which is stored at ${
+			} config file, which is stored at ${chalk.underline(
 				shouldSaveToLocalConfig
 					? this.localConfigPath
 					: this.globalConfigPath
-			}`
+			)}`
 		)
 
 		if (shouldSaveToLocalConfig) {
