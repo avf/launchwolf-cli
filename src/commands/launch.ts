@@ -13,6 +13,7 @@ import {
 	FeatureStatus,
 	getFeatureByName,
 	getSingleFeatureTable,
+	getStatusTable,
 } from "../utils/FeatureTable"
 import Mailjet from "../mailing/mailjet"
 
@@ -66,7 +67,7 @@ export default class Launch extends Command {
 			const isDomainOwned = await this.purchaseDomain(domain)
 			const emailFeature = getFeatureByName("Email")
 			emailFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
+			console.log(getStatusTable())
 			if (isDomainOwned) {
 				await this.createMailbox(domain)
 				await this.setupEmailForwarding(domain)
@@ -78,7 +79,7 @@ export default class Launch extends Command {
 			emailFeature.status = FeatureStatus.done
 			const hostingFeature = getFeatureByName("Hosting")
 			hostingFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
+			console.log(getStatusTable())
 
 			const netlify = new Netlify(domain, this.unifiedConfig)
 			await netlify.setupContinousDeployment()
@@ -95,7 +96,7 @@ export default class Launch extends Command {
 			hostingFeature.status = FeatureStatus.done
 			const mailingListFeature = getFeatureByName("Mailing list")
 			mailingListFeature.status = FeatureStatus.inProgress
-			console.log(getFeatureTable())
+			console.log(getStatusTable())
 
 			const mailjetConfig = await this.unifiedConfig.get("mailjetConfig")
 			const mailjet = new Mailjet(
