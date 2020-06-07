@@ -56,7 +56,12 @@ export default class Launch extends Command {
 				const answer = await prompt.run()
 				domain = answer
 			}
-			// TODO: Check if domain has correct format, remove http/https
+
+			domain = domain.replace("https://", "")
+			domain = domain.replace("http://", "")
+			if (domain.slice(0, 4) === "www.") {
+				domain = domain.replace("www.", "")
+			}
 			this.log(`Checking availability for domain "${domain}"...`)
 			const gandiAPIKey = await unifiedConfig.get("gandiAPIKey")
 			const gandi = new Gandi(domain, gandiAPIKey, unifiedConfig)
