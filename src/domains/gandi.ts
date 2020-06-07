@@ -202,7 +202,10 @@ class Gandi {
 				this.createDNSPutPromise(record),
 			])
 		}
+		await this.performDNSChanges(promises)
+	}
 
+	private async performDNSChanges(promises: [string, () => Promise<any>][]) {
 		if (promises.length === 0) {
 			console.log(
 				`All DNS records set up correctly. Please wait a few hours for the changes to propagate. After that, your site will be online and available at https://${this.domain}`
@@ -217,7 +220,7 @@ class Gandi {
 			console.log("    " + elem[0])
 		})
 		const prompt = new Confirm({
-			name: "purchaseQuestion",
+			name: "dnsChangeQuestion",
 			message: `Do you want to perform these changes (recommended)?`,
 			initial: true,
 		})
@@ -232,7 +235,7 @@ class Gandi {
 				}
 			}
 			console.log(
-				`All DNS records have been set up correctly. Please wait a few hours for the changes to propagate. After that, your site will be online and available at https://${this.domain}`
+				`All DNS records have been set up correctly. Please wait a few hours for the changes to propagate.`
 			)
 		} else {
 			console.log("Ok, aborting.")
@@ -428,8 +431,122 @@ class Gandi {
 	}
 
 	public async setupDNSForMailjet(mailjetDNS: any) {
-		// const records = await this.getDNSRecords()
-		console.log(mailjetDNS)
+		const records = await this.getDNSRecords()
+		let promises: [string, () => Promise<any>][] = []
+		promises = promises.concat(
+			this.createOwnershipRecordPromises(records, mailjetDNS)
+		)
+		promises = promises.concat(
+			this.createSPFRecordPromises(records, mailjetDNS)
+		)
+		promises = promises.concat(
+			this.createDKIMRecordPromises(records, mailjetDNS)
+		)
+		await this.performDNSChanges(promises)
+	}
+
+	private createOwnershipRecordPromises(
+		records: DNSRecord[],
+		mailjetDNS: any
+	): [string, () => Promise<any>][] {
+		const ownershipRecord = records.filter(
+			(elem) =>
+				mailjetDNS.OwnerShipTokenRecordName.includes(elem.rrset_name) &&
+				elem.rrset_type === "TXT" &&
+				elem.rrset_values.filter((elem) => {
+					return elem.includes(mailjetDNS.OwnerShipToken)
+				})[0]
+		)[0]
+		if (ownershipRecord) {
+			return []
+		}
+		const record: DNSRecord = {
+			rrset_name: mailjetDNS.OwnerShipTokenRecordName,
+			rrset_type: "TXT",
+			rrset_ttl: 300,
+			rrset_href: "",
+			rrset_values: [mailjetDNS.OwnerShipToken],
+		}
+		return [
+			[
+				`Set ${record.rrset_type} record for ${record.rrset_name} to ${record.rrset_values}`,
+				this.createDNSPutPromise(record),
+			],
+		]
+	}
+
+	private createDKIMRecordPromises(
+		records: DNSRecord[],
+		mailjetDNS: any
+	): [string, () => Promise<any>][] {
+		const dkimRecord = records.filter(
+			(elem) =>
+				mailjetDNS.DKIMRecordName.includes(elem.rrset_name) &&
+				elem.rrset_type === "TXT" &&
+				elem.rrset_values.filter((elem) => {
+					return elem.includes(mailjetDNS.DKIMRecordValue)
+				})[0]
+		)[0]
+		if (dkimRecord) {
+			return []
+		}
+		const record: DNSRecord = {
+			rrset_name: mailjetDNS.DKIMRecordName,
+			rrset_type: "TXT",
+			rrset_ttl: 300,
+			rrset_href: "",
+			rrset_values: [mailjetDNS.DKIMRecordValue],
+		}
+		return [
+			[
+				`Set ${record.rrset_type} record for ${record.rrset_name} to ${record.rrset_values}`,
+				this.createDNSPutPromise(record),
+			],
+		]
+	}
+
+	private createSPFRecordPromises(
+		records: DNSRecord[],
+		mailjetDNS: any
+	): [string, () => Promise<any>][] {
+		const spfRecord = records.filter(
+			(elem) =>
+				elem.rrset_name === "@" &&
+				elem.rrset_type === "TXT" &&
+				elem.rrset_values.filter((elem) => elem.includes("v=spf1"))[0]
+		)[0]
+		let newSPFValue: string | null = null
+		const spfRecordOldValue = spfRecord.rrset_values.filter((elem) =>
+			elem.includes("v=spf1")
+		)[0]
+		const mailjetSPFRecordValue: string = mailjetDNS.SPFRecordValue
+		const mailjetIncludeString = mailjetSPFRecordValue
+			.split(" ")
+			.filter((elem) => elem.includes("include:"))[0]
+		if (!spfRecord) {
+			// SPF doesn't exist, let's just create it from mailjet
+			newSPFValue = mailjetSPFRecordValue
+		} else if (!spfRecordOldValue?.includes(mailjetIncludeString)) {
+			const spfRecordOldValueSplit = spfRecordOldValue.split(" ")
+			spfRecordOldValueSplit.splice(1, 0, mailjetIncludeString)
+			newSPFValue = spfRecordOldValueSplit.join(" ")
+		}
+		if (newSPFValue) {
+			const record: DNSRecord = {
+				rrset_name: "@",
+				rrset_type: "TXT",
+				rrset_ttl: 300,
+				rrset_href: "",
+				rrset_values: [newSPFValue],
+			}
+			return [
+				[
+					`Set ${record.rrset_type} record for ${record.rrset_name} to ${record.rrset_values}`,
+					this.createDNSPutPromise(record),
+				],
+			]
+		}
+		return []
 	}
 }
 
