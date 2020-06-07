@@ -37,7 +37,7 @@ export default class Launch extends Command {
 	gandi!: Gandi
 	async run() {
 		try {
-			// this.log("Welcome to LaunchWolf!")
+			this.log("Welcome to LaunchWolf!")
 			const { args, flags } = this.parse(Launch)
 			this.unifiedConfig = await this.setupConfig(flags)
 			const domain = await this.parseDomain(args)
@@ -48,11 +48,21 @@ export default class Launch extends Command {
 				await this.createMailbox(domain)
 				await this.setupEmailForwarding(domain)
 			} else {
-				console.log("Skipping Email setup since domain is not owned.")
+				console.log(
+					"Skipping Email setup since domain ownership couldn't be confirmed."
+				)
 			}
 			const netlify = new Netlify(domain, this.unifiedConfig)
 			await netlify.setupContinousDeployment()
-			await netlify.addDomainToSite()
+			if (isDomainOwned) {
+				const netlifySite = await netlify.addDomainToSite()
+				const aliasAndCNAMERecordValue = `${netlifySite.name}.netlify.com.`
+				await this.gandi.updateDNS(aliasAndCNAMERecordValue)
+			} else {
+				console.log(
+					"Skipping domain and DNS setup for Netlify hosting, since domain ownership couldn't be confirmed."
+				)
+			}
 		} catch (error) {
 			this.handleError(error)
 		}

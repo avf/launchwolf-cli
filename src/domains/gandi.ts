@@ -44,6 +44,14 @@ interface CreateMailboxBody {
 	aliases?: string[]
 }
 
+interface DNSRecord {
+	rrset_name: string
+	rrset_type: string
+	rrset_ttl: number
+	rrset_href: string
+	rrset_values: string[]
+}
+
 class Gandi {
 	domain: string
 	axios: AxiosInstance
@@ -129,6 +137,124 @@ class Gandi {
 			"You can view the purchased domain in the Gandi admin console at https://admin.gandi.net/domain"
 		)
 		return true
+	}
+
+	public async getDNSRecords(): Promise<DNSRecord[]> {
+		const response = await this.axios.get(
+			`/livedns/domains/${this.domain}/records`
+		)
+
+		return response.data
+	}
+
+	public async updateDNS(aliasAndCNAMERecordValue: string) {
+		const records = await this.getDNSRecords()
+		const promises: [string, () => Promise<any>][] = []
+		if (
+			records.filter(
+				(elem) => elem.rrset_name === "@" && elem.rrset_type === "A"
+			)[0]
+		) {
+			promises.push([
+				"Delete A record for @ (this would conflict with ALIAS record)",
+				this.createDNSDeletionPromise("@", "A"),
+			])
+		}
+
+		if (
+			!records.filter(
+				(elem) =>
+					elem.rrset_name === "@" &&
+					elem.rrset_type === "ALIAS" &&
+					elem.rrset_values.includes(aliasAndCNAMERecordValue)
+			)[0]
+		) {
+			const record: DNSRecord = {
+				rrset_name: "@",
+				rrset_type: "ALIAS",
+				rrset_ttl: 300,
+				rrset_href: "",
+				rrset_values: [aliasAndCNAMERecordValue],
+			}
+			promises.push([
+				`Set ${record.rrset_type} record for ${record.rrset_name} to ${record.rrset_values}`,
+				this.createDNSPutPromise(record),
+			])
+		}
+
+		if (
+			!records.filter(
+				(elem) =>
+					elem.rrset_name === "www" &&
+					elem.rrset_type === "CNAME" &&
+					elem.rrset_values.includes(aliasAndCNAMERecordValue)
+			)[0]
+		) {
+			const record: DNSRecord = {
+				rrset_name: "www",
+				rrset_type: "CNAME",
+				rrset_ttl: 300,
+				rrset_href: "",
+				rrset_values: [aliasAndCNAMERecordValue],
+			}
+			promises.push([
+				`Set ${record.rrset_type} record for ${record.rrset_name} to ${record.rrset_values}`,
+				this.createDNSPutPromise(record),
+			])
+		}
+
+		if (promises.length === 0) {
+			console.log(
+				`All DNS records set up correctly. Please wait a few hours for the changes to propagate. After that, your site will be online and available at https://${this.domain}`
+			)
+			return
+		}
+
+		console.log(
+			"Some DNS records are not set up correctly. Will perform the following operations:"
+		)
+		promises.forEach((elem) => {
+			console.log("    " + elem[0])
+		})
+		const prompt = new Confirm({
+			name: "purchaseQuestion",
+			message: `Do you want to perform these changes (recommended)?`,
+			initial: true,
+		})
+		const result = await prompt.run()
+		if (result) {
+			for (let elem of promises) {
+				try {
+					await elem[1]()
+				} catch (error) {
+					console.log("Error setting up dns record: ", error)
+					throw error
+				}
+			}
+			console.log(
+				`All DNS records have been set up correctly. Please wait a few hours for the changes to propagate. After that, your site will be online and available at https://${this.domain}`
+			)
+		} else {
+			console.log("Ok, aborting.")
+		}
+	}
+
+	private createDNSDeletionPromise(
+		recordName: string,
+		recordType: string
+	): () => Promise<any> {
+		return () =>
+			this.axios.delete(
+				`/livedns/domains/${this.domain}/records/${recordName}/${recordType}`
+			)
+	}
+
+	private createDNSPutPromise(dnsRecord: DNSRecord): () => Promise<any> {
+		return () =>
+			this.axios.put(
+				`/livedns/domains/${this.domain}/records/${dnsRecord.rrset_name}/${dnsRecord.rrset_type}`,
+				dnsRecord
+			)
 	}
 
 	private async showPurchaseConfirmationPrompt(
