@@ -12,7 +12,7 @@
 		"@oclif/plugin-help": "^2.2.3",
 		"@types/cli-table": "^0.3.0",
 		"@types/fs-extra": "^8.1.0",
-		"axios": "^0.19.2",
+		"axios": "^0.21.1",
 		"cli-table": "^0.3.1",
 		"enquirer": "^2.3.5",
 		"log-symbols": "^4.0.0",
